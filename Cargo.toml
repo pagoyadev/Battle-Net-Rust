@@ -1,0 +1,10 @@
+[package]
+name = "battle_net"
+version = "0.1.0"
+
+[dependencies]
+httpmock = "0.8.3"
+reqwest = "0.13.4"
+thiserror = "2.0.18"
+tokio = "1.52.3"
+
