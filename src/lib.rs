@@ -1,7 +1,16 @@
 #![forbid(unsafe_code)]
 
 extern crate thiserror;
+
 use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Transport: {0}")]
+    TransportError(reqwest::Error),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 pub struct Credentials {
     access_token: String,
@@ -30,19 +39,42 @@ impl Region {
     }
 }
 
-#[derive(Error, Debug)]
-enum Error {
-    #[error("Transport: {0}")]
-    TransportError(reqwest::Error),
-}
-
-pub fn authenticate(client_id: String, client_secret: String, region: Region) {
+pub async fn authenticate(
+    client_id: String,
+    client_secret: String,
+    region: Region,
+) -> Result<Credentials> {
     let client = reqwest::ClientBuilder::default()
         .build()
-        .map_err(|err| Error::TransportError(err));
+        .map_err(|err| Error::TransportError(err))?;
 
     client
         .get(region.get_auth_uri())
         .basic_auth(client_id, Some(client_secret))
-        .send();
+        .send()
+        .await
+        .map_err(|err| Error::TransportError(err))?;
+    Ok(Credentials {
+        access_token: "".to_string(),
+        expires_in: 0,
+        token_type: "".to_string(),
+        scope: "".to_string(),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use httpmock::{prelude::*, server::HttpMockServerBuilder};
+    #[tokio::test]
+    async fn my_test() {
+        let server = HttpMockServerBuilder::
+        let hello_mock = server.mock(|when, then| {
+            when.method("GET")
+                .path("/translate")
+                .query_param("word", "hello");
+            then.status(200)
+                .header("content-type", "text/html; charset=UTF-8")
+                .body("hola");
+        });
+    }
 }
